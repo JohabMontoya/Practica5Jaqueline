@@ -1,8 +1,10 @@
 package com.example.practica5jaqueline;
 
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.io.IOException;
+import java.util.*;
+import java.util.stream.Collectors;
 
 public class Betweenle {
 
@@ -20,6 +22,7 @@ public class Betweenle {
     private int intentosRestantes;
     private int intentosMaximos;
     private int longitudPalabra;
+    private String archivoDiccionario;
 
     private String idioma;
 
@@ -29,10 +32,38 @@ public class Betweenle {
         this.intentosRestantes = intentos;
         this.idioma = idioma.toLowerCase();
 
+        if (idioma.equalsIgnoreCase("es")) {
+            this.archivoDiccionario = "BetweenleEspanol.txt";
+        } else {
+            this.archivoDiccionario = "BetweenleIngles.txt";
+        }
+
+        this.diccionario = new HashMap<>();
+        this.letrasUsadas = new HashSet<>();
+        this.historial = new ArrayList<>();
+
         this.limiteInferiorInicial = "a".repeat(longitudPalabra);
         this.limiteSuperiorInicial = "z".repeat(longitudPalabra);
         this.limiteInferior = limiteInferiorInicial;
         this.limiteSuperior = limiteSuperiorInicial;
+
+        cargarDiccionario();
+    }
+
+    private void cargarDiccionario() {
+        try (BufferedReader br = new BufferedReader(new FileReader(archivoDiccionario))) {
+            diccionario = br.lines()
+                    .map(String::trim)
+                    .filter(linea -> !linea.isEmpty())
+                    .collect(Collectors.toMap(
+                            palabra -> palabra.toLowerCase(),
+                            palabra -> palabra.length(),
+                            (existente, reemplazo) -> existente,
+                            HashMap::new
+                    ));
+        } catch (IOException e) {
+            System.out.println("Error al cargar el diccionario: " + e.getMessage());
+        }
     }
 
     public int getIntentosRestantes(){
