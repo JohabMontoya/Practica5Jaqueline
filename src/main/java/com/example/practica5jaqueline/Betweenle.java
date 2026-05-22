@@ -151,6 +151,35 @@ public class Betweenle {
         }
     }
 
+    public String obtenerPista(String opcion) {
+        int indiceInferior = Math.max(0, palabrasValidasPorLongitud.indexOf(limiteInferior));
+        int indiceSuperior = palabrasValidasPorLongitud.indexOf(limiteSuperior);
+        if (indiceSuperior == -1) indiceSuperior = palabrasValidasPorLongitud.size() - 1;
+
+        int rango = indiceSuperior - indiceInferior;
+
+        switch (opcion.toLowerCase()) {
+            case "a":
+                if (limiteSuperior.equals(limiteSuperiorInicial)) {
+                    return "No aplicable. Aún estás en el límite final sin modificar (" + limiteSuperiorInicial + ").";
+                }
+                int pasoA = Math.max(1, (int)(rango * 0.01));
+                limiteSuperior = palabrasValidasPorLongitud.get(indiceSuperior - pasoA);
+                return "Pista: Límite final recorrido alfabéticamente un 1%. Nuevo final: " + limiteSuperior;
+            case "b":
+                if (limiteInferior.equals(limiteInferiorInicial)) {
+                    return "No aplicable. Aún estás en el límite inicial sin modificar (" + limiteInferiorInicial + ").";
+                }
+                int pasoB = Math.max(1, (int)(rango * 0.01));
+                limiteInferior = palabrasValidasPorLongitud.get(indiceInferior + pasoB);
+                return "Pista: Límite inicial recorrido alfabéticamente un 1%. Nuevo inicial: " + limiteInferior;
+            case "c":
+                return "Pista: La palabra secreta empieza con la letra '" + palabraSecreta.charAt(0) + "'.";
+            default:
+                return "Opción de pista inválida.";
+        }
+    }
+
     public int getIntentosRestantes(){
         return intentosRestantes;
     }
