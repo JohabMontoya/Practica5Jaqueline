@@ -101,6 +101,26 @@ public class Betweenle {
         palabraSecreta = palabrasValidasPorLongitud.get(indiceAleatorio);
     }
 
+    private String calcularPorcentajes() {
+        int indiceInferior = palabrasValidasPorLongitud.indexOf(limiteInferior);
+        int indiceSuperior = palabrasValidasPorLongitud.indexOf(limiteSuperior);
+        int indiceSecreto = palabrasValidasPorLongitud.indexOf(palabraSecreta);
+
+        if (indiceInferior == -1) indiceInferior = 0;
+        if (indiceSuperior == -1) indiceSuperior = palabrasValidasPorLongitud.size() - 1;
+
+        int rangoTotal = indiceSuperior - indiceInferior;
+        if (rangoTotal <= 0) return "El rango se ha cerrado completamente.";
+
+        int totalPalabras = palabrasValidasPorLongitud.size();
+
+        double porcentajeInferior = (double)(indiceSecreto - indiceInferior) / totalPalabras * 100;
+        double porcentajeSuperior = (double)(indiceSuperior - indiceSecreto) / totalPalabras * 100;
+
+        return String.format("El límite inicial está a %.2f%% de la palabra secreta y el final a %.2f%%.",
+                porcentajeInferior, porcentajeSuperior);
+    }
+
     public String jugarTurno(String intento) {
         intento = intento.toLowerCase();
 
@@ -124,10 +144,10 @@ public class Betweenle {
 
         if (intento.compareTo(palabraSecreta) < 0) {
             limiteInferior = intento;
-            return "La palabra secreta está después de '" + intento;
+            return "La palabra secreta está después de '" + intento + "'.\n" + calcularPorcentajes();
         } else {
             limiteSuperior = intento;
-            return "La palabra secreta está antes de '" + intento;
+            return "La palabra secreta está antes de '" + intento +  "'.\n" + calcularPorcentajes();
         }
     }
 
