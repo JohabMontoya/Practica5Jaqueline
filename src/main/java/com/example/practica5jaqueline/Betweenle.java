@@ -66,6 +66,21 @@ public class Betweenle {
         }
     }
 
+    private void configurarJuego() {
+        palabrasValidasPorLongitud = diccionario.entrySet().stream()
+                .filter(entrada -> entrada.getValue() == longitudPalabra)
+                .map(Map.Entry::getKey)
+                .sorted()
+                .collect(Collectors.toList());
+
+        if (palabrasValidasPorLongitud.isEmpty()) {
+            throw new IllegalStateException("No hay palabras de longitud " + longitudPalabra + " en el archivo " + archivoDiccionario);
+        }
+
+        int indiceAleatorio = new Random().nextInt(palabrasValidasPorLongitud.size());
+        palabraSecreta = palabrasValidasPorLongitud.get(indiceAleatorio);
+    }
+
     public int getIntentosRestantes(){
         return intentosRestantes;
     }
