@@ -83,7 +83,6 @@ public class Main {
 
             String resultadoTurno = juegoApi.jugarTurno(entrada);
             System.out.println("\n=> " + resultadoTurno);
-
             List<String> historial = juegoApi.getHistorial();
             if (!historial.isEmpty()) {
                 System.out.print("Historial de intentos: [");

@@ -48,6 +48,7 @@ public class Betweenle {
         this.limiteSuperior = limiteSuperiorInicial;
 
         cargarDiccionario();
+        configurarJuego();
     }
 
     private String limpiarAcentos(String texto) {
