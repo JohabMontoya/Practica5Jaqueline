@@ -9,7 +9,7 @@ public class Main {
         Scanner sc = new Scanner(System.in);
         System.out.println("Betweenle");
 
-        // 1. Validación estricta para el IDIOMA (Usando bandera booleana en lugar de break)
+
         int idiomaSeleccionado = 0;
         boolean idiomaValido = false;
         while (!idiomaValido) {

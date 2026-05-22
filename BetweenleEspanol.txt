@@ -62589,6 +62589,7 @@ promiscuo,9
 promision,9
 promisorio,10
 promitente,10
+promo,5
 promocion,9
 promocional,11
 promocionar,11
