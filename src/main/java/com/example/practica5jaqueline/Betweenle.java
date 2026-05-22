@@ -24,18 +24,20 @@ public class Betweenle {
     private int longitudPalabra;
     private String archivoDiccionario;
 
-    private String idioma;
+    private int idioma;
 
-    public Betweenle(int longitudPalabra, int intentos, String idioma) {
+    public Betweenle(int idioma,  int longitudPalabra, int intentos) {
         this.longitudPalabra = longitudPalabra;
         this.intentosMaximos = intentos;
         this.intentosRestantes = intentos;
-        this.idioma = idioma.toLowerCase();
+        this.idioma = idioma;
 
-        if (idioma.equalsIgnoreCase("es")) {
+        if (idioma == 1) {
             this.archivoDiccionario = "BetweenleEspanol.txt";
-        } else {
+        } else if (idioma == 2) {
             this.archivoDiccionario = "BetweenleEnglish.txt";
+        } else{
+            System.out.println("Opción invalida.");
         }
 
         this.diccionario = new HashMap<>();
