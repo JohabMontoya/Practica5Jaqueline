@@ -26,7 +26,6 @@ public class Main {
             }
         }
 
-        // 2. Validación estricta para la LONGITUD (Dificultad)
         int longitud = 0;
         boolean longitudValida = false;
         while (!longitudValida) {
