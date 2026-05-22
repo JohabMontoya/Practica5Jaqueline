@@ -3,7 +3,9 @@ package com.example.practica5jaqueline;
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
+import java.text.Normalizer;
 import java.util.*;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 public class Betweenle {
@@ -50,19 +52,37 @@ public class Betweenle {
         cargarDiccionario();
     }
 
+    private String limpiarAcentos(String texto) {
+        if (texto == null) return null;
+        String textoNormalizado = Normalizer.normalize(texto, Normalizer.Form.NFD);
+        Pattern patron = Pattern.compile("\\p{InCombiningDiacriticalMarks}+");
+        return patron.matcher(textoNormalizado).replaceAll("");
+    }
+
     private void cargarDiccionario() {
         try (BufferedReader br = new BufferedReader(new FileReader(archivoDiccionario))) {
             diccionario = br.lines()
                     .map(String::trim)
-                    .filter(linea -> linea.contains(","))
+                    .filter(linea -> !linea.isEmpty())
                     .collect(Collectors.toMap(
-                            linea -> linea.split(",")[0].toLowerCase(),
-                            linea -> Integer.parseInt(linea.split(",")[1]),
+                            linea -> {
+                                String palabra = linea.contains(",") ? linea.split(",")[0] : linea;
+                                return limpiarAcentos(palabra).toLowerCase();
+                            },
+                            linea -> {
+                                if (linea.contains(",")) {
+                                    return Integer.parseInt(linea.split(",")[1]);
+                                } else {
+                                    return limpiarAcentos(linea).length();
+                                }
+                            },
                             (existente, reemplazo) -> existente,
                             HashMap::new
                     ));
         } catch (IOException e) {
             System.out.println("Error al cargar el diccionario: " + e.getMessage());
+        } catch (NumberFormatException e) {
+            System.out.println("Error de formato numérico en el archivo: " + e.getMessage());
         }
     }
 
