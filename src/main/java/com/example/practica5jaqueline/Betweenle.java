@@ -35,7 +35,7 @@ public class Betweenle {
         if (idioma.equalsIgnoreCase("es")) {
             this.archivoDiccionario = "BetweenleEspanol.txt";
         } else {
-            this.archivoDiccionario = "BetweenleIngles.txt";
+            this.archivoDiccionario = "BetweenleEnglish.txt";
         }
 
         this.diccionario = new HashMap<>();
@@ -54,10 +54,10 @@ public class Betweenle {
         try (BufferedReader br = new BufferedReader(new FileReader(archivoDiccionario))) {
             diccionario = br.lines()
                     .map(String::trim)
-                    .filter(linea -> !linea.isEmpty())
+                    .filter(linea -> linea.contains(","))
                     .collect(Collectors.toMap(
-                            palabra -> palabra.toLowerCase(),
-                            palabra -> palabra.length(),
+                            linea -> linea.split(",")[0].toLowerCase(),
+                            linea -> Integer.parseInt(linea.split(",")[1]),
                             (existente, reemplazo) -> existente,
                             HashMap::new
                     ));
@@ -79,6 +79,36 @@ public class Betweenle {
 
         int indiceAleatorio = new Random().nextInt(palabrasValidasPorLongitud.size());
         palabraSecreta = palabrasValidasPorLongitud.get(indiceAleatorio);
+    }
+
+    public String jugarTurno(String intento) {
+        intento = intento.toLowerCase();
+
+        for (char letra : intento.toCharArray()) {
+            letrasUsadas.add(letra);
+        }
+
+        if (intento.compareTo(limiteInferior) <= 0) {
+            return "La palabra está fuera de rango. La palabra '" + intento + "' está antes del límite inferior actual (" + limiteInferior + ").";
+        }
+        if (intento.compareTo(limiteSuperior) >= 0) {
+            return "La palabra está fuera de rango. La palabra '" + intento + "' está después del límite superior actual (" + limiteSuperior + ").";
+        }
+
+        historial.add(intento);
+        intentosRestantes--;
+
+        if (intento.equals(palabraSecreta)) {
+            return "Ganaste, la palabra secreta es: " + palabraSecreta;
+        }
+
+        if (intento.compareTo(palabraSecreta) < 0) {
+            limiteInferior = intento;
+            return "La palabra secreta está después de '" + intento;
+        } else {
+            limiteSuperior = intento;
+            return "La palabra secreta está antes de '" + intento;
+        }
     }
 
     public int getIntentosRestantes(){
