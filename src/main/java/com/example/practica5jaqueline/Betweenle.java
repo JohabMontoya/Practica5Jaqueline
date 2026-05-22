@@ -1,8 +1,6 @@
 package com.example.practica5jaqueline;
 
-import java.io.BufferedReader;
-import java.io.FileReader;
-import java.io.IOException;
+import java.io.*;
 import java.text.Normalizer;
 import java.util.*;
 import java.util.regex.Pattern;
@@ -121,6 +119,32 @@ public class Betweenle {
                 porcentajeInferior, porcentajeSuperior);
     }
 
+    public void agregarPalabra(String palabra) {
+        palabra = limpiarAcentos(palabra).toLowerCase();
+
+        diccionario.put(palabra, palabra.length());
+
+        if (palabra.length() == longitudPalabra && !palabrasValidasPorLongitud.contains(palabra)) {
+            palabrasValidasPorLongitud.add(palabra);
+            palabrasValidasPorLongitud.sort(String::compareTo);
+        }
+
+        try (BufferedWriter bw = new BufferedWriter(new FileWriter(archivoDiccionario))) {
+            diccionario.entrySet().stream()
+                    .sorted(Map.Entry.comparingByKey())
+                    .forEach(entrada -> {
+                        try {
+                            bw.write(entrada.getKey() + "," + entrada.getValue());
+                            bw.newLine();
+                        } catch (IOException e) {
+                            System.out.println("Error escribiendo palabra: " + e.getMessage());
+                        }
+                    });
+        } catch (IOException e) {
+            System.out.println("Error al guardar y refrescar el diccionario: " + e.getMessage());
+        }
+    }
+
     public String jugarTurno(String intento) {
         intento = intento.toLowerCase();
 
@@ -180,6 +204,10 @@ public class Betweenle {
         }
     }
 
+    public boolean estaPalabraEnDiccionario(String palabra) {
+        return diccionario.containsKey(limpiarAcentos(palabra).toLowerCase());
+    }
+
     public int getIntentosRestantes(){
         return intentosRestantes;
     }
@@ -196,4 +224,14 @@ public class Betweenle {
         return palabraSecreta;
     }
 
+    public List<String> getHistorial() {
+        return historial;
+    }
+    public Set<Character> getLetrasUsadas() {
+        return letrasUsadas;
+    }
+
+    public boolean juegoTerminado() {
+        return intentosRestantes <= 0 || historial.contains(palabraSecreta);
+    }
 }
