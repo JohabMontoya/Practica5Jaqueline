@@ -26,7 +26,7 @@ public class Betweenle {
 
     private int idioma;
 
-    public Betweenle(int idioma,  int longitudPalabra, int intentos) {
+    public Betweenle(int idioma,  int longitudPalabra, int intentos) throws IOException {
         this.longitudPalabra = longitudPalabra;
         this.intentosMaximos = intentos;
         this.intentosRestantes = intentos;
@@ -36,8 +36,8 @@ public class Betweenle {
             this.archivoDiccionario = "BetweenleEspanol.txt";
         } else if (idioma == 2) {
             this.archivoDiccionario = "BetweenleEnglish.txt";
-        } else{
-            System.out.println("Opción invalida.");
+        } else {
+            throw new IllegalArgumentException("Opción de idioma inválida.");
         }
 
         this.diccionario = new HashMap<>();
@@ -60,7 +60,7 @@ public class Betweenle {
         return patron.matcher(textoNormalizado).replaceAll("");
     }
 
-    private void cargarDiccionario() {
+    private void cargarDiccionario() throws IOException {
         try (BufferedReader br = new BufferedReader(new FileReader(archivoDiccionario))) {
             diccionario = br.lines()
                     .map(String::trim)
@@ -80,10 +80,8 @@ public class Betweenle {
                             (existente, reemplazo) -> existente,
                             HashMap::new
                     ));
-        } catch (IOException e) {
-            System.out.println("Error al cargar el diccionario: " + e.getMessage());
         } catch (NumberFormatException e) {
-            System.out.println("Error de formato numérico en el archivo: " + e.getMessage());
+            throw new IOException("Error de formato numérico en el archivo: " + e.getMessage());
         }
     }
 
@@ -122,7 +120,7 @@ public class Betweenle {
                 porcentajeInferior, porcentajeSuperior);
     }
 
-    public void agregarPalabra(String palabra) {
+    public void agregarPalabra(String palabra) throws IOException {
         palabra = limpiarAcentos(palabra).toLowerCase();
 
         diccionario.put(palabra, palabra.length());
@@ -133,18 +131,14 @@ public class Betweenle {
         }
 
         try (BufferedWriter bw = new BufferedWriter(new FileWriter(archivoDiccionario))) {
-            diccionario.entrySet().stream()
+            List<Map.Entry<String, Integer>> entradasOrdenadas = diccionario.entrySet().stream()
                     .sorted(Map.Entry.comparingByKey())
-                    .forEach(entrada -> {
-                        try {
-                            bw.write(entrada.getKey() + "," + entrada.getValue());
-                            bw.newLine();
-                        } catch (IOException e) {
-                            System.out.println("Error escribiendo palabra: " + e.getMessage());
-                        }
-                    });
-        } catch (IOException e) {
-            System.out.println("Error al guardar y refrescar el diccionario: " + e.getMessage());
+                    .collect(Collectors.toList());
+
+            for (Map.Entry<String, Integer> entrada : entradasOrdenadas) {
+                bw.write(entrada.getKey() + "," + entrada.getValue());
+                bw.newLine();
+            }
         }
     }
 

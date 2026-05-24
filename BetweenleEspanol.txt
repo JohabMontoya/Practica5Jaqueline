@@ -9955,6 +9955,7 @@ azoriniano,10
 azoro,5
 azorramiento,12
 azorrar,7
+azota,5
 azotable,8
 azotacalles,11
 azotado,7

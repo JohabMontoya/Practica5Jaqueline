@@ -1,5 +1,6 @@
 package com.example.practica5jaqueline;
 
+import java.io.IOException;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Scanner;
@@ -8,7 +9,6 @@ public class Main {
     public static void main(String[] args) {
         Scanner sc = new Scanner(System.in);
         System.out.println("Betweenle");
-
 
         int idiomaSeleccionado = 0;
         boolean idiomaValido = false;
@@ -32,10 +32,10 @@ public class Main {
             System.out.println("Selecciona la dificultad (ingrese la longitud de la palabra). Fácil=5, Intermedio=6, Difícil=N: ");
             try {
                 longitud = Integer.parseInt(sc.nextLine().trim());
-                if (longitud > 6 || longitud == 5 || longitud == 6) {
+                if (longitud > 6 || longitud == 5 || longitud == 6 || longitud < 14) {
                     longitudValida = true;
                 } else {
-                    System.out.println("Error: La longitud debe ser mayor a 0.");
+                    System.out.println("Error: La longitud debe ser mayor a 5 y menor a 14.");
                 }
             } catch (NumberFormatException e) {
                 System.out.println("Error: Entrada inválida. Debes ingresar un número entero.");
@@ -61,9 +61,9 @@ public class Main {
         Betweenle juegoApi;
         try {
             juegoApi = new Betweenle(idiomaSeleccionado, longitud, intentos);
-        } catch (IllegalStateException e) {
+        } catch (IllegalStateException | IllegalArgumentException | IOException e) {
             System.out.println("Error: " + e.getMessage());
-            System.out.println("Asegúrate de que existan palabras en el archivo para esa longitud.");
+            System.out.println("Asegúrate de que el archivo exista y contenga palabras válidas.");
             return;
         }
 
@@ -115,10 +115,15 @@ public class Main {
                     System.out.println("La palabra '" + entrada + "' no está en el diccionario.");
                     System.out.print("¿Deseas agregarla al diccionario? (s/n): ");
                     if (sc.nextLine().trim().equalsIgnoreCase("s")) {
-                        juegoApi.agregarPalabra(entrada);
-                        System.out.println("Escribe el signficado de la palabra: ");
+                        System.out.println("Escribe el significado de la palabra: ");
                         sc.nextLine();
-                        System.out.println("Palabra agregada con éxito al diccionario.");
+                        try {
+                            juegoApi.agregarPalabra(entrada);
+                            System.out.println("Palabra agregada con éxito al diccionario.");
+                        } catch (IOException e) {
+                            System.out.println("Error al intentar guardar la palabra en el diccionario: " + e.getMessage());
+                            procesarTurno = false;
+                        }
                     } else {
                         System.out.println("Intento cancelado. Intenta con otra palabra.");
                         procesarTurno = false;
