@@ -9368,6 +9368,7 @@ aula,4
 aulaga,6
 aulagar,7
 aulario,7
+aulas,5
 aulico,6
 aulladero,9
 aullador,8
