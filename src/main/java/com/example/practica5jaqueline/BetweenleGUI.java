@@ -202,9 +202,190 @@ public class BetweenleGUI extends Application {
     }
 
     private Scene crearEscenaJuego() {
-        VBox dummy = new VBox(new Label(""));
-        return new Scene(dummy, 760, 900);
+        BorderPane root = new BorderPane();
+        root.setPadding(new Insets(18));
+        root.setStyle("-fx-background-color: #ffffff;");
+
+        BorderPane topBar = new BorderPane();
+        topBar.setPadding(new Insets(8));
+        topBar.setStyle("-fx-background-color: transparent;");
+
+        // NOTA: Recuerda que ImageButton debe estar implementado en tu proyecto
+        ImageButton btnHome = new ImageButton("homePNG.png");
+        btnHome.setText(t("Menú", "Menu"));
+        btnHome.establecerImagen(homeImg);
+        btnHome.establecerTamanoImagen(28, 28);
+        btnHome.setStyle("-fx-background-color: transparent; -fx-text-fill: #1f2a44; -fx-font-weight: bold;");
+        btnHome.setOnAction(e -> ventanaPrincipal.setScene(escenaConfig));
+
+        ImageButton btnStats = new ImageButton("estadisticas.png");
+        btnStats.setText(t("Estadísticas", "Stats"));
+        btnStats.establecerImagen(statsImg);
+        btnStats.establecerTamanoImagen(28, 28);
+        btnStats.setStyle("-fx-background-color: transparent; -fx-text-fill: #1f2a44; -fx-font-weight: bold;");
+        btnStats.setOnAction(e -> mostrarEstadisticas());
+
+        topBar.setLeft(btnHome);
+        topBar.setRight(btnStats);
+        root.setTop(topBar);
+
+        VBox centro = new VBox(14);
+        centro.setAlignment(Pos.TOP_CENTER);
+        centro.setPadding(new Insets(6));
+
+        lblTitulo = new Label(t("BETWEENLE - Español", "BETWEENLE - English"));
+        lblTitulo.setFont(Font.font("Arial", FontWeight.EXTRA_BOLD, 36));
+        lblTitulo.setStyle("-fx-text-fill: #1f2a44;");
+
+        lblAttempts = new Label();
+        lblAttempts.setFont(Font.font("Arial", FontWeight.EXTRA_BOLD, 18));
+        lblAttempts.setStyle("-fx-text-fill: #1f2a44;");
+
+        filaLimiteArriba = new HBox(8);
+        filaLimiteArriba.setAlignment(Pos.CENTER);
+
+        filaSecreta = new HBox(8);
+        filaSecreta.setAlignment(Pos.CENTER);
+
+        filaLimiteAbajo = new HBox(8);
+        filaLimiteAbajo.setAlignment(Pos.CENTER);
+
+        lblMensajes = new Label(t("Escribe tu intento y presiona “Adivinar”.", "Type your guess and press “Guess”."));
+        lblMensajes.setStyle("-fx-text-fill: #34495e; -fx-font-weight: bold;");
+
+        txtEntrada = new TextField();
+        txtEntrada.setEditable(true);
+        txtEntrada.setAlignment(Pos.CENTER);
+        txtEntrada.setFont(Font.font("Arial", FontWeight.BOLD, 18));
+        txtEntrada.setMaxWidth(320);
+        txtEntrada.setStyle("-fx-background-color: #f3f6ff; -fx-text-fill: #1f2a44; -fx-background-radius: 10; -fx-border-radius: 10; -fx-border-color: #c7d2fe; -fx-border-width: 2;");
+
+        txtEntrada.setTextFormatter(new TextFormatter<String>(change -> {
+            String newText = change.getControlNewText();
+            if (newText.isEmpty()) return change;
+            if (!newText.matches("[a-zA-ZñÑ]*")) return null;
+            if (newText.length() > longitud) return null;
+            return change;
+        }));
+        txtEntrada.textProperty().addListener((obs, oldV, newV) -> actualizarTecladoYDinamica());
+
+        HBox acciones = new HBox(12);
+        acciones.setAlignment(Pos.CENTER);
+
+        SoundButton btnGuess = new SoundButton(t("Adivinar", "Guess"));
+        btnGuess.establecerSonidoClic(clickSound);
+        btnGuess.setStyle(estiloBotonPrincipal());
+        btnGuess.setOnAction(e -> procesarIntento());
+
+        ImageButton btnHint = new ImageButton("pista.png");
+        btnHint.setText(t("Pista", "Hint"));
+        btnHint.establecerImagen(hintImg);
+        btnHint.establecerTamanoImagen(22, 22);
+        btnHint.setStyle("-fx-background-color: #eef2ff; -fx-text-fill: #1f2a44; -fx-font-weight: bold; -fx-padding: 10 18; -fx-background-radius: 12; -fx-border-color: #c7d2fe; -fx-border-width: 2; -fx-border-radius: 12;");
+        btnHint.setOnAction(e -> abrirMenuPistas());
+
+        SoundButton btnGiveUp = new SoundButton(t("Rendirse", "Give up"));
+        btnGiveUp.establecerSonidoClic(clickSound);
+        btnGiveUp.setStyle("-fx-background-color: #ffecec; -fx-text-fill: #c0392b; -fx-font-weight: bold; -fx-font-size: 14px; -fx-padding: 12 18; -fx-background-radius: 14; -fx-border-color: #ffb3b3; -fx-border-width: 2; -fx-border-radius: 14;");
+        btnGiveUp.setOnAction(e -> mostrarVentanaFin(t("Te has rendido", "You gave up"), false));
+
+        acciones.getChildren().addAll(btnGuess, btnHint, btnGiveUp);
+
+        tecladoPane = crearTecladoVisual();
+        tecladoPane.setPadding(new Insets(8));
+
+        centro.getChildren().addAll(
+                lblTitulo,
+                lblAttempts,
+                spacer(6),
+                filaLimiteArriba,
+                spacer(6),
+                filaSecreta,
+                spacer(6),
+                filaLimiteAbajo,
+                spacer(12),
+                lblMensajes,
+                txtEntrada,
+                acciones,
+                spacer(10),
+                tecladoPane
+        );
+
+        root.setCenter(centro);
+
+        actualizarUI();
+        reconstruirFilas();
+        txtEntrada.requestFocus();
+
+        return new Scene(root, 760, 900);
     }
+
+    private Region spacer(double h) {
+        Region r = new Region();
+        r.setMinHeight(h);
+        return r;
+    }
+
+
+    private void reconstruirFilas() {
+        if (juegoApi == null) return;
+
+        filaLimiteArriba.getChildren().clear();
+        filaSecreta.getChildren().clear();
+        filaLimiteAbajo.getChildren().clear();
+
+        String inf = juegoApi.getLimiteInferior().toUpperCase();
+        String sup = juegoApi.getLimiteSuperior().toUpperCase();
+
+        filaLimiteArriba.getChildren().add(bloquePorcentaje(porcentajeInf));
+        for (char c : inf.toCharArray()) filaLimiteArriba.getChildren().add(bloqueVerde(String.valueOf(c)));
+
+        for (int i = 0; i < longitud; i++) filaSecreta.getChildren().add(bloqueGris("_"));
+
+        filaLimiteAbajo.getChildren().add(bloquePorcentaje(porcentajeSup));
+        for (char c : sup.toCharArray()) filaLimiteAbajo.getChildren().add(bloqueVerde(String.valueOf(c)));
+    }
+
+    private StackPane bloquePorcentaje(String pct) {
+        Label l = new Label(pct == null ? "?%" : pct);
+        l.setFont(Font.font("Arial", FontWeight.EXTRA_BOLD, 14));
+        l.setStyle("-fx-text-fill: #1f2a44;");
+
+        StackPane box = new StackPane(l);
+        box.setPrefSize(78, 54);
+        box.setStyle("-fx-background-color: #eef2ff; -fx-background-radius: 10; -fx-border-radius: 10; -fx-border-color: #c7d2fe; -fx-border-width: 2;");
+        return box;
+    }
+
+    private StackPane bloqueVerde(String letra) {
+        Label l = new Label(letra);
+        l.setFont(Font.font("Arial", FontWeight.EXTRA_BOLD, 18));
+        l.setStyle("-fx-text-fill: #0b3a2a;");
+
+        StackPane box = new StackPane(l);
+        box.setPrefSize(64, 54);
+        box.setStyle("-fx-background-color: #d1fae5; -fx-background-radius: 10; -fx-border-radius: 10; -fx-border-color: #6ee7b7; -fx-border-width: 2;");
+        return box;
+    }
+
+    private StackPane bloqueGris(String letra) {
+        Label l = new Label(letra);
+        l.setFont(Font.font("Arial", FontWeight.EXTRA_BOLD, 18));
+        l.setStyle("-fx-text-fill: #1f2a44;");
+
+        StackPane box = new StackPane(l);
+        box.setPrefSize(64, 54);
+        box.setStyle("-fx-background-color: #e5e7eb; -fx-background-radius: 10; -fx-border-radius: 10; -fx-border-color: #cbd5e1; -fx-border-width: 2;");
+        return box;
+    }
+
+    private void mostrarEstadisticas() {}
+    private void actualizarTecladoYDinamica() {}
+    private void procesarIntento() {}
+    private void abrirMenuPistas() {}
+    private void mostrarVentanaFin(String tituloStr, boolean ganado) {}
+    private void actualizarUI() {}
+    private FlowPane crearTecladoVisual() { return new FlowPane(); }
 
 
 
