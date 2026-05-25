@@ -62,7 +62,61 @@ public class BetweenleGUI extends Application {
         this.ventanaPrincipal = primaryStage;
         this.ventanaPrincipal.setTitle("Betweenle");
 
+        escenaIdioma = crearEscenaIdioma();
+        ventanaPrincipal.setScene(escenaIdioma);
 
         ventanaPrincipal.show();
     }
+
+    private Scene crearEscenaIdioma() {
+        VBox root = new VBox(22);
+        root.setAlignment(Pos.CENTER);
+        root.setPadding(new Insets(50));
+        root.setStyle("-fx-background-color: linear-gradient(to bottom, #f7fbff, #eef4ff);");
+
+        Label titulo = new Label("BETWEENLE");
+        titulo.setFont(Font.font("Arial", FontWeight.EXTRA_BOLD, 54));
+        titulo.setStyle("-fx-text-fill: #1f2a44;");
+
+        Label subtitulo = new Label("Selecciona un idioma / Choose a language");
+        subtitulo.setStyle("-fx-text-fill: #4c5a7a; -fx-font-size: 14px;");
+
+        SoundButton btnES = new SoundButton("Español");
+        btnES.establecerSonidoClic(clickSound);
+        btnES.setStyle(estiloBotonPrincipal());
+        btnES.setOnAction(e -> {
+            idiomaSeleccionado = 1;
+            escenaConfig = crearEscenaConfig();
+            ventanaPrincipal.setScene(escenaConfig);
+        });
+
+        SoundButton btnEN = new SoundButton("English");
+        btnEN.establecerSonidoClic(clickSound);
+        btnEN.setStyle(estiloBotonPrincipal());
+        btnEN.setOnAction(e -> {
+            idiomaSeleccionado = 2;
+            escenaConfig = crearEscenaConfig();
+            ventanaPrincipal.setScene(escenaConfig);
+        });
+
+        HBox botones = new HBox(14, btnES, btnEN);
+        botones.setAlignment(Pos.CENTER);
+
+        root.getChildren().addAll(titulo, subtitulo, botones);
+        return new Scene(root, 520, 680);
+    }
+
+    private String t(String es, String en) {
+        return (idiomaSeleccionado == 1) ? es : en;
+    }
+
+    private String estiloBotonPrincipal() {
+        return "-fx-background-color: #3b82f6; -fx-text-fill: white; -fx-font-weight: bold;";
+    }
+
+    private Scene crearEscenaConfig() {
+        VBox dummy = new VBox(new Label(""));
+        return new Scene(dummy, 520, 680);
+    }
+
 }
