@@ -28,7 +28,6 @@ public class BetweenleGUI extends Application {
     private final File hintImg = new File("pista.png");
 
     private Stage ventanaPrincipal;
-
     private Scene escenaIdioma;
     private Scene escenaConfig;
     private Scene escenaJuego;
@@ -64,7 +63,6 @@ public class BetweenleGUI extends Application {
 
         escenaIdioma = crearEscenaIdioma();
         ventanaPrincipal.setScene(escenaIdioma);
-
         ventanaPrincipal.show();
     }
 
@@ -104,10 +102,6 @@ public class BetweenleGUI extends Application {
 
         root.getChildren().addAll(titulo, subtitulo, botones);
         return new Scene(root, 520, 680);
-    }
-
-    private String t(String es, String en) {
-        return (idiomaSeleccionado == 1) ? es : en;
     }
 
     private Scene crearEscenaConfig() {
@@ -167,7 +161,6 @@ public class BetweenleGUI extends Application {
             intentos = I;
 
             try {
-                // Instanciamos el backend del juego (asegúrate de tener la clase Betweenle en tu proyecto)
                 juegoApi = new Betweenle(idiomaSeleccionado, longitud, intentos);
 
                 porcentajeInf = "?%";
@@ -184,21 +177,9 @@ public class BetweenleGUI extends Application {
         });
 
         filaBotones.getChildren().addAll(btnVolver, btnIniciar);
+
         root.getChildren().addAll(titulo, lblLong, comboLongitud, lblIntentos, comboIntentos, lblError, filaBotones);
         return new Scene(root, 520, 680);
-    }
-
-    private String estiloBotonPrincipal() {
-        return "-fx-background-color: #3b82f6; -fx-text-fill: white; -fx-font-weight: bold; -fx-font-size: 16px; " +
-                "-fx-padding: 12 26; -fx-background-radius: 14;";
-    }
-
-    private String estiloBotonSecundario() {
-        return "-fx-background-color: #eef2ff; -fx-text-fill: #1f2a44; -fx-font-weight: bold; -fx-font-size: 14px; " +
-                "-fx-padding: 10 20; -fx-background-radius: 14; -fx-border-color: #c7d2fe; -fx-border-width: 2; -fx-border-radius: 14;";
-    }
-
-    private void recalcularPorcentajes() {
     }
 
     private Scene crearEscenaJuego() {
@@ -210,7 +191,6 @@ public class BetweenleGUI extends Application {
         topBar.setPadding(new Insets(8));
         topBar.setStyle("-fx-background-color: transparent;");
 
-        // NOTA: Recuerda que ImageButton debe estar implementado en tu proyecto
         ImageButton btnHome = new ImageButton("homePNG.png");
         btnHome.setText(t("Menú", "Menu"));
         btnHome.establecerImagen(homeImg);
@@ -282,7 +262,13 @@ public class BetweenleGUI extends Application {
         btnHint.establecerImagen(hintImg);
         btnHint.establecerTamanoImagen(22, 22);
         btnHint.setStyle("-fx-background-color: #eef2ff; -fx-text-fill: #1f2a44; -fx-font-weight: bold; -fx-padding: 10 18; -fx-background-radius: 12; -fx-border-color: #c7d2fe; -fx-border-width: 2; -fx-border-radius: 12;");
-        btnHint.setOnAction(e -> abrirMenuPistas());
+        btnHint.setOnAction(e -> {
+            if (pistaUtilizada) {
+                popupInfo(t("Pista", "Hint"), t("Ya no tienes pistas disponibles.", "You have no hints left."));
+                return;
+            }
+            abrirMenuPistas();
+        });
 
         SoundButton btnGiveUp = new SoundButton(t("Rendirse", "Give up"));
         btnGiveUp.establecerSonidoClic(clickSound);
@@ -326,10 +312,7 @@ public class BetweenleGUI extends Application {
         return r;
     }
 
-
     private void reconstruirFilas() {
-        if (juegoApi == null) return;
-
         filaLimiteArriba.getChildren().clear();
         filaSecreta.getChildren().clear();
         filaLimiteAbajo.getChildren().clear();
@@ -379,14 +362,382 @@ public class BetweenleGUI extends Application {
         return box;
     }
 
-    private void mostrarEstadisticas() {}
-    private void actualizarTecladoYDinamica() {}
-    private void procesarIntento() {}
-    private void abrirMenuPistas() {}
-    private void mostrarVentanaFin(String tituloStr, boolean ganado) {}
-    private void actualizarUI() {}
-    private FlowPane crearTecladoVisual() { return new FlowPane(); }
+    private FlowPane crearTecladoVisual() {
+        FlowPane panel = new FlowPane(10, 10);
+        panel.setAlignment(Pos.CENTER);
+        panel.setMaxWidth(680);
 
+        String alfabeto = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
 
+        for (char letra : alfabeto.toCharArray()) {
+            Button b = new Button(String.valueOf(letra));
+            b.setPrefSize(44, 44);
+            b.setFocusTraversable(false);
+            b.setDisable(false);
+            b.setOnAction(null);
+            b.setStyle(teclaActiva());
+            panel.getChildren().add(b);
+        }
+        return panel;
+    }
 
+    private String teclaActiva() {
+        return "-fx-background-color: #6366f1; -fx-text-fill: white; -fx-font-weight: bold; " +
+                "-fx-background-radius: 100; -fx-border-radius: 100; -fx-border-color: #4338ca; -fx-border-width: 2;";
+    }
+
+    private String teclaInactiva() {
+        return "-fx-background-color: #e5e7eb; -fx-text-fill: #9ca3af; -fx-font-weight: bold; " +
+                "-fx-background-radius: 100; -fx-border-radius: 100; -fx-border-color: #d1d5db; -fx-border-width: 2;";
+    }
+
+    private void actualizarTecladoYDinamica() {
+        if (juegoApi == null || tecladoPane == null) return;
+
+        String input = (txtEntrada != null ? txtEntrada.getText() : "").toLowerCase();
+        String inf = juegoApi.getLimiteInferior().toLowerCase();
+        String sup = juegoApi.getLimiteSuperior().toLowerCase();
+
+        if (input.length() >= longitud) {
+            for (Node n : tecladoPane.getChildren()) {
+                if (n instanceof Button btn && btn.getText().length() == 1) {
+                    btn.setDisable(true);
+                    btn.setStyle(teclaInactiva());
+                }
+            }
+            return;
+        }
+
+        char minChar = 'a';
+        char maxChar = 'z';
+
+        if (inf.startsWith(input) && input.length() < inf.length()) minChar = inf.charAt(input.length());
+        if (sup.startsWith(input) && input.length() < sup.length()) maxChar = sup.charAt(input.length());
+
+        boolean fueraPorPrefijo = false;
+        if (!input.isEmpty()) {
+            String subInf = inf.substring(0, Math.min(input.length(), inf.length()));
+            String subSup = sup.substring(0, Math.min(input.length(), sup.length()));
+            if (input.compareTo(subInf) < 0) fueraPorPrefijo = true;
+            if (input.compareTo(subSup) > 0) fueraPorPrefijo = true;
+        }
+
+        for (Node n : tecladoPane.getChildren()) {
+            if (!(n instanceof Button btn)) continue;
+            if (btn.getText().length() != 1) continue;
+
+            char letra = btn.getText().toLowerCase().charAt(0);
+            boolean habilitar = !fueraPorPrefijo && (letra >= minChar && letra <= maxChar);
+
+            btn.setDisable(!habilitar);
+            btn.setStyle(habilitar ? teclaActiva() : teclaInactiva());
+        }
+    }
+
+    private void actualizarUI() {
+        lblAttempts.setText(t("Intentos: ", "Attempts: ") + juegoApi.getIntentosRestantes() + "/" + intentos);
+        reconstruirFilas();
+        actualizarTecladoYDinamica();
+    }
+
+    private void procesarIntento() {
+        String intento = txtEntrada.getText().trim().toLowerCase();
+
+        if (intento.length() != longitud) {
+            lblMensajes.setText(t(
+                    "La palabra debe tener exactamente " + longitud + " letras.",
+                    "The word must be exactly " + longitud + " letters."
+            ));
+            txtEntrada.requestFocus();
+            return;
+        }
+
+        boolean procesarTurno = true;
+
+        if (!juegoApi.estaPalabraEnDiccionario(intento)) {
+            Alert pregunta = new Alert(Alert.AlertType.CONFIRMATION);
+            pregunta.setTitle(t("Palabra no encontrada", "Word not found"));
+            pregunta.setHeaderText(t(
+                    "La palabra \"" + intento + "\" no está en el diccionario.",
+                    "The word \"" + intento + "\" is not in the dictionary."
+            ));
+            pregunta.setContentText(t("¿Deseas agregarla al diccionario?", "Do you want to add it to the dictionary?"));
+
+            ButtonType si = new ButtonType(t("Sí", "Yes"));
+            ButtonType no = new ButtonType(t("No", "No"), ButtonBar.ButtonData.CANCEL_CLOSE);
+            pregunta.getButtonTypes().setAll(si, no);
+
+            Optional<ButtonType> r = pregunta.showAndWait();
+            if (r.isPresent() && r.get() == si) {
+                TextInputDialog significadoDlg = new TextInputDialog();
+                significadoDlg.setTitle(t("Agregar palabra", "Add word"));
+                significadoDlg.setHeaderText(t("Escribe el significado de la palabra:", "Write the meaning of the word:"));
+                significadoDlg.setContentText(t("Significado:", "Meaning:"));
+                significadoDlg.showAndWait();
+
+                try {
+                    juegoApi.agregarPalabra(intento);
+                    popupInfo(t("Diccionario", "Dictionary"),
+                            t("Palabra agregada con éxito.", "Word added successfully."));
+                } catch (Exception ex) {
+                    popupWarn(t("Error", "Error"),
+                            t("Error al guardar la palabra: ", "Failed to save word: ") + ex.getMessage());
+                    procesarTurno = false;
+                }
+            } else {
+                lblMensajes.setText(t("Intento cancelado. Intenta con otra palabra.",
+                        "Attempt canceled. Try another word."));
+                procesarTurno = false;
+            }
+        }
+
+        if (!procesarTurno) {
+            txtEntrada.requestFocus();
+            return;
+        }
+
+        String resultado = juegoApi.jugarTurno(intento);
+
+        extraerPorcentajesDeTexto(resultado);
+
+        lblMensajes.setText(uiMensaje(resultado));
+
+        txtEntrada.clear();
+
+        recalcularPorcentajes();
+
+        actualizarUI();
+        txtEntrada.requestFocus();
+
+        if (juegoApi.juegoTerminado()) {
+            boolean ganado = juegoApi.getHistorial().contains(juegoApi.getPalabraSecreta());
+            mostrarVentanaFin(ganado ? t("¡Ganaste!", "You won!") : t("Perdiste", "You lost"), ganado);
+        }
+    }
+
+    private void abrirMenuPistas() {
+        Dialog<String> dialog = new Dialog<>();
+        dialog.setTitle(t("Pistas", "Hints"));
+        dialog.setHeaderText(t("Selecciona una pista", "Choose a hint"));
+
+        ButtonType btnA = new ButtonType("a", ButtonBar.ButtonData.LEFT);
+        ButtonType btnB = new ButtonType("b", ButtonBar.ButtonData.LEFT);
+        ButtonType btnC = new ButtonType("c", ButtonBar.ButtonData.LEFT);
+        ButtonType cancelar = new ButtonType(t("Cancelar", "Cancel"), ButtonBar.ButtonData.CANCEL_CLOSE);
+
+        dialog.getDialogPane().getButtonTypes().addAll(btnA, btnB, btnC, cancelar);
+
+        VBox contenido = new VBox(10);
+        contenido.setPadding(new Insets(10));
+
+        Label reglas = new Label(t(
+                "a) Recorrer 1% el límite final (solo si ya cambiaste el límite final por defecto)\n" +
+                        "b) Recorrer 1% el límite inicial (solo si ya cambiaste el límite inicial por defecto)\n" +
+                        "c) Revelar la letra con la que empieza",
+                "a) Move upper bound by 1% (only if you already changed the default upper bound)\n" +
+                        "b) Move lower bound by 1% (only if you already changed the default lower bound)\n" +
+                        "c) Reveal the first letter"
+        ));
+        contenido.getChildren().add(reglas);
+
+        dialog.getDialogPane().setContent(contenido);
+
+        dialog.setResultConverter(button -> {
+            if (button == btnA) return "a";
+            if (button == btnB) return "b";
+            if (button == btnC) return "c";
+            return null;
+        });
+
+        Optional<String> res = dialog.showAndWait();
+        if (res.isEmpty()) return;
+
+        String opcion = res.get();
+        String resultado = juegoApi.obtenerPista(opcion);
+
+        recalcularPorcentajes();
+
+        String msg = uiMensaje(resultado);
+
+        if (resultado.startsWith("Pista:")) {
+            pistaUtilizada = true;
+            popupInfo(t("Pista usada", "Hint used"), msg);
+        } else {
+            popupWarn(t("Pista no válida", "Invalid hint"), msg);
+        }
+
+        lblMensajes.setText(msg);
+        actualizarUI();
+        txtEntrada.requestFocus();
+    }
+
+    private void mostrarVentanaFin(String tituloStr, boolean ganado) {
+        Stage ventanaFin = new Stage();
+        ventanaFin.initModality(Modality.APPLICATION_MODAL);
+        ventanaFin.setTitle(tituloStr);
+
+        VBox layout = new VBox(18);
+        layout.setAlignment(Pos.CENTER);
+        layout.setPadding(new Insets(25));
+        layout.setStyle("-fx-background-color: #ffffff;");
+
+        Label titulo = new Label(tituloStr);
+        titulo.setFont(Font.font("Arial", FontWeight.BOLD, 24));
+        titulo.setStyle(ganado ? "-fx-text-fill: #27ae60;" : "-fx-text-fill: #c0392b;");
+
+        Label secreto = new Label(t("La palabra secreta era: ", "The secret word was: ")
+                + juegoApi.getPalabraSecreta().toUpperCase());
+        secreto.setStyle("-fx-text-fill: #1f2a44;");
+
+        SoundButton btnMenu = new SoundButton(t("Volver al menú", "Back to menu"));
+        btnMenu.establecerSonidoClic(clickSound);
+        btnMenu.setStyle(estiloBotonSecundario());
+        btnMenu.setOnAction(e -> {
+            ventanaFin.close();
+            ventanaPrincipal.setScene(escenaConfig);
+        });
+
+        ImageButton btnEstadisticas = new ImageButton("estadisticas.png");
+        btnEstadisticas.setText(t("Estadísticas", "Stats"));
+        btnEstadisticas.establecerImagen(statsImg);
+        btnEstadisticas.establecerTamanoImagen(22, 22);
+        btnEstadisticas.setStyle("-fx-background-color: #eef2ff; -fx-text-fill: #1f2a44; -fx-padding: 10 18; -fx-background-radius: 12; -fx-border-color: #c7d2fe; -fx-border-width: 2; -fx-border-radius: 12; -fx-font-weight: bold;");
+        btnEstadisticas.setOnAction(e -> mostrarEstadisticas());
+
+        SoundButton btnSalir = new SoundButton(t("Salir", "Exit"));
+        btnSalir.establecerSonidoClic(clickSound);
+        btnSalir.setStyle("-fx-background-color: #f3f4f6; -fx-text-fill: #1f2a44; -fx-padding: 10 18; -fx-background-radius: 12; -fx-border-color: #e5e7eb; -fx-border-width: 2; -fx-border-radius: 12; -fx-font-weight: bold;");
+        btnSalir.setOnAction(e -> Platform.exit());
+
+        layout.getChildren().addAll(titulo, secreto, btnMenu, btnEstadisticas, btnSalir);
+        ventanaFin.setScene(new Scene(layout, 420, 440));
+        ventanaFin.showAndWait();
+    }
+
+    private void mostrarEstadisticas() {
+        Alert alerta = new Alert(Alert.AlertType.INFORMATION);
+        alerta.setTitle(t("Estadísticas", "Statistics"));
+        alerta.setHeaderText(t("Resumen de la partida", "Match summary"));
+
+        String historial = String.join(", ", juegoApi.getHistorial());
+        String letras = juegoApi.getLetrasUsadas().toString();
+
+        alerta.setContentText(
+                t("Palabras jugadas:\n", "Words played:\n") + historial +
+                        "\n\n" + t("Letras usadas:\n", "Letters used:\n") + letras
+        );
+        alerta.showAndWait();
+    }
+
+    private void popupInfo(String titulo, String msg) {
+        Alert a = new Alert(Alert.AlertType.INFORMATION);
+        a.setTitle(titulo);
+        a.setHeaderText(null);
+        a.setContentText(msg);
+        a.showAndWait();
+    }
+
+    private void popupWarn(String titulo, String msg) {
+        Alert a = new Alert(Alert.AlertType.WARNING);
+        a.setTitle(titulo);
+        a.setHeaderText(null);
+        a.setContentText(msg);
+        a.showAndWait();
+    }
+
+    private String estiloBotonPrincipal() {
+        return "-fx-background-color: #3b82f6; -fx-text-fill: white; -fx-font-weight: bold; -fx-font-size: 16px; " +
+                "-fx-padding: 12 26; -fx-background-radius: 14;";
+    }
+
+    private String estiloBotonSecundario() {
+        return "-fx-background-color: #eef2ff; -fx-text-fill: #1f2a44; -fx-font-weight: bold; -fx-font-size: 14px; " +
+                "-fx-padding: 10 20; -fx-background-radius: 14; -fx-border-color: #c7d2fe; -fx-border-width: 2; -fx-border-radius: 14;";
+    }
+
+    private String t(String es, String en) {
+        return (idiomaSeleccionado == 1) ? es : en;
+    }
+
+    private String uiMensaje(String resultadoApi) {
+        if (resultadoApi == null) return "";
+
+        if (idiomaSeleccionado == 1) {
+            return resultadoApi;
+        }
+
+        String s = resultadoApi;
+
+        s = s.replace("Ganaste, la palabra secreta es: ", "You won! The secret word is: ");
+
+        s = s.replace("La palabra está fuera de rango. La palabra '", "Out of range. The word '");
+        s = s.replace("' está antes del límite inferior actual (", "' is before the current lower bound (");
+        s = s.replace("' está después del límite superior actual (", "' is after the current upper bound (");
+
+        s = s.replace("La palabra secreta está después de '", "The secret word is after '");
+        s = s.replace("La palabra secreta está antes de '", "The secret word is before '");
+
+        s = s.replace("Pista: Límite final recorrido alfabéticamente un 1%. Nuevo final: ",
+                "Hint: Upper bound moved by 1%. New upper bound: ");
+        s = s.replace("Pista: Límite inicial recorrido alfabéticamente un 1%. Nuevo inicial: ",
+                "Hint: Lower bound moved by 1%. New lower bound: ");
+        s = s.replace("Pista: La palabra secreta empieza con la letra '",
+                "Hint: The secret word starts with '");
+        s = s.replace("'.", "'.");
+
+        s = s.replace("No aplicable. Aún estás en el límite final sin modificar (", "Not applicable. Upper bound has not changed yet (");
+        s = s.replace("No aplicable. Aún estás en el límite inicial sin modificar (", "Not applicable. Lower bound has not changed yet (");
+
+        s = s.replace("Opción de pista inválida.", "Invalid hint option.");
+
+        s = s.replace("El límite inicial está a ", "Lower bound is ");
+        s = s.replace(" de la palabra secreta y el final a ", " away from the secret word, and upper bound is ");
+        s = s.replace(".", ".");
+
+        return s;
+    }
+
+    private void extraerPorcentajesDeTexto(String texto) {
+        if (texto == null) return;
+        Pattern patron = Pattern.compile("a (\\d+\\.\\d+)% .* a (\\d+\\.\\d+)%");
+        Matcher matcher = patron.matcher(texto);
+        if (matcher.find()) {
+            porcentajeInf = matcher.group(1) + "%";
+            porcentajeSup = matcher.group(2) + "%";
+        }
+    }
+
+    private void recalcularPorcentajes() {
+        try {
+            if (juegoApi == null) return;
+
+            Field f = Betweenle.class.getDeclaredField("palabrasValidasPorLongitud");
+            f.setAccessible(true);
+
+            @SuppressWarnings("unchecked")
+            List<String> lista = (List<String>) f.get(juegoApi);
+            if (lista == null || lista.isEmpty()) return;
+
+            String inf = juegoApi.getLimiteInferior();
+            String sup = juegoApi.getLimiteSuperior();
+            String secret = juegoApi.getPalabraSecreta();
+
+            int idxInf = lista.indexOf(inf);
+            int idxSup = lista.indexOf(sup);
+            int idxSec = lista.indexOf(secret);
+
+            if (idxInf == -1) idxInf = 0;
+            if (idxSup == -1) idxSup = lista.size() - 1;
+
+            int total = lista.size();
+
+            double pInf = (double) (idxSec - idxInf) / total * 100.0;
+            double pSup = (double) (idxSup - idxSec) / total * 100.0;
+
+            porcentajeInf = String.format("%.2f%%", pInf);
+            porcentajeSup = String.format("%.2f%%", pSup);
+
+        } catch (Exception ignored) {
+        }
+    }
 }

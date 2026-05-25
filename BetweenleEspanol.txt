@@ -6482,6 +6482,7 @@ anudamiento,11
 anudar,6
 anuencia,8
 anuente,7
+anula,5
 anulable,8
 anulacion,9
 anulador,8
