@@ -110,13 +110,102 @@ public class BetweenleGUI extends Application {
         return (idiomaSeleccionado == 1) ? es : en;
     }
 
-    private String estiloBotonPrincipal() {
-        return "-fx-background-color: #3b82f6; -fx-text-fill: white; -fx-font-weight: bold;";
+    private Scene crearEscenaConfig() {
+        VBox root = new VBox(18);
+        root.setAlignment(Pos.CENTER);
+        root.setPadding(new Insets(40));
+        root.setStyle("-fx-background-color: #f6f8fc;");
+
+        Label titulo = new Label(t("Configuración del juego", "Game setup"));
+        titulo.setFont(Font.font("Arial", FontWeight.BOLD, 28));
+        titulo.setStyle("-fx-text-fill: #1f2a44;");
+
+        Label lblLong = new Label(t("Longitud de palabra (5 a 13)", "Word length (5 to 13)"));
+        lblLong.setStyle("-fx-text-fill: #1f2a44; -fx-font-weight: bold;");
+
+        ComboBox<Integer> comboLongitud = new ComboBox<>();
+        for (int i = 5; i < 14; i++) comboLongitud.getItems().add(i);
+        comboLongitud.setValue(longitud);
+
+        Label lblIntentos = new Label(t("Oportunidades (10, 12 o 14)", "Attempts (10, 12 or 14)"));
+        lblIntentos.setStyle("-fx-text-fill: #1f2a44; -fx-font-weight: bold;");
+
+        ComboBox<Integer> comboIntentos = new ComboBox<>();
+        comboIntentos.getItems().addAll(10, 12, 14);
+        comboIntentos.setValue(intentos);
+
+        Label lblError = new Label("");
+        lblError.setStyle("-fx-text-fill: #c0392b; -fx-font-weight: bold;");
+
+        HBox filaBotones = new HBox(12);
+        filaBotones.setAlignment(Pos.CENTER);
+
+        SoundButton btnVolver = new SoundButton(t("Volver", "Back"));
+        btnVolver.establecerSonidoClic(clickSound);
+        btnVolver.setStyle(estiloBotonSecundario());
+        btnVolver.setOnAction(e -> ventanaPrincipal.setScene(escenaIdioma));
+
+        SoundButton btnIniciar = new SoundButton(t("Iniciar", "Start"));
+        btnIniciar.establecerSonidoClic(clickSound);
+        btnIniciar.setStyle(estiloBotonPrincipal());
+        btnIniciar.setOnAction(e -> {
+            Integer L = comboLongitud.getValue();
+            Integer I = comboIntentos.getValue();
+
+            if (L == null || L < 5 || L >= 14) {
+                lblError.setText(t("Error: la longitud debe estar entre 5 y 13.",
+                        "Error: length must be between 5 and 13."));
+                return;
+            }
+            if (I == null || !(I == 10 || I == 12 || I == 14)) {
+                lblError.setText(t("Error: debes elegir 10, 12 o 14 oportunidades.",
+                        "Error: you must choose 10, 12 or 14 attempts."));
+                return;
+            }
+
+            longitud = L;
+            intentos = I;
+
+            try {
+                // Instanciamos el backend del juego (asegúrate de tener la clase Betweenle en tu proyecto)
+                juegoApi = new Betweenle(idiomaSeleccionado, longitud, intentos);
+
+                porcentajeInf = "?%";
+                porcentajeSup = "?%";
+                pistaUtilizada = false;
+
+                recalcularPorcentajes();
+
+                escenaJuego = crearEscenaJuego();
+                ventanaPrincipal.setScene(escenaJuego);
+            } catch (Exception ex) {
+                lblError.setText(t("Error al cargar diccionario: ", "Failed to load dictionary: ") + ex.getMessage());
+            }
+        });
+
+        filaBotones.getChildren().addAll(btnVolver, btnIniciar);
+        root.getChildren().addAll(titulo, lblLong, comboLongitud, lblIntentos, comboIntentos, lblError, filaBotones);
+        return new Scene(root, 520, 680);
     }
 
-    private Scene crearEscenaConfig() {
-        VBox dummy = new VBox(new Label(""));
-        return new Scene(dummy, 520, 680);
+    private String estiloBotonPrincipal() {
+        return "-fx-background-color: #3b82f6; -fx-text-fill: white; -fx-font-weight: bold; -fx-font-size: 16px; " +
+                "-fx-padding: 12 26; -fx-background-radius: 14;";
     }
+
+    private String estiloBotonSecundario() {
+        return "-fx-background-color: #eef2ff; -fx-text-fill: #1f2a44; -fx-font-weight: bold; -fx-font-size: 14px; " +
+                "-fx-padding: 10 20; -fx-background-radius: 14; -fx-border-color: #c7d2fe; -fx-border-width: 2; -fx-border-radius: 14;";
+    }
+
+    private void recalcularPorcentajes() {
+    }
+
+    private Scene crearEscenaJuego() {
+        VBox dummy = new VBox(new Label(""));
+        return new Scene(dummy, 760, 900);
+    }
+
+
 
 }
