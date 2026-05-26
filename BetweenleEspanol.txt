@@ -4107,6 +4107,7 @@ alijarar,8
 alijarero,9
 alijariego,10
 alijo,5
+alila,5
 alim,4
 alimana,7
 alimanero,9
@@ -10036,6 +10037,7 @@ babador,7
 babahoyense,11
 babanca,7
 babanco,7
+babas,5
 babatel,7
 babaza,6
 babazorro,9
@@ -47397,6 +47399,7 @@ kilometrar,10
 kilometrico,11
 kilometro,9
 kilopondio,10
+kilos,5
 kilotex,7
 kiloton,7
 kilovatio,9

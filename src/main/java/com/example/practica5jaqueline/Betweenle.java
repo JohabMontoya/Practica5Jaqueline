@@ -53,6 +53,14 @@ public class Betweenle {
         configurarJuego();
     }
 
+    public String getLimiteInferiorInicial(){
+        return limiteInferiorInicial;
+    }
+
+    public String getLimiteSuperiorInicial(){
+        return limiteSuperiorInicial;
+    }
+
     private String limpiarAcentos(String texto) {
         if (texto == null) return null;
         String textoNormalizado = Normalizer.normalize(texto, Normalizer.Form.NFD);

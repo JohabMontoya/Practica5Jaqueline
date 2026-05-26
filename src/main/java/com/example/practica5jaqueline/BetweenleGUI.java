@@ -15,6 +15,7 @@ import javafx.stage.Stage;
 
 import java.io.File;
 import java.lang.reflect.Field;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.regex.Matcher;
@@ -31,6 +32,9 @@ public class BetweenleGUI extends Application {
     private Scene escenaIdioma;
     private Scene escenaConfig;
     private Scene escenaJuego;
+
+    private final List<StackPane> bloquesSecreto = new ArrayList<>();
+    private boolean ultimaJugadaFueVictoria = false;
 
     private Betweenle juegoApi;
 
@@ -53,7 +57,9 @@ public class BetweenleGUI extends Application {
     private HBox filaLimiteAbajo;
 
     private TextField txtEntrada;
-
+    private SoundButton btnGuess;
+    private ImageButton btnHint;
+    private SoundButton btnGiveUp;
     private FlowPane tecladoPane;
 
     @Override
@@ -114,11 +120,11 @@ public class BetweenleGUI extends Application {
         titulo.setFont(Font.font("Arial", FontWeight.BOLD, 28));
         titulo.setStyle("-fx-text-fill: #1f2a44;");
 
-        Label lblLong = new Label(t("Longitud de palabra (5 a 13)", "Word length (5 to 13)"));
+        Label lblLong = new Label(t("Longitud de palabra (5 a 14)", "Word length (5 to 14)"));
         lblLong.setStyle("-fx-text-fill: #1f2a44; -fx-font-weight: bold;");
 
         ComboBox<Integer> comboLongitud = new ComboBox<>();
-        for (int i = 5; i < 14; i++) comboLongitud.getItems().add(i);
+        for (int i = 5; i < 15; i++) comboLongitud.getItems().add(i);
         comboLongitud.setValue(longitud);
 
         Label lblIntentos = new Label(t("Oportunidades (10, 12 o 14)", "Attempts (10, 12 or 14)"));
@@ -166,9 +172,10 @@ public class BetweenleGUI extends Application {
                 porcentajeInf = "?%";
                 porcentajeSup = "?%";
                 pistaUtilizada = false;
-
-                recalcularPorcentajes();
-
+                if(!juegoApi.getLimiteInferior().equals(juegoApi.getLimiteInferiorInicial()) &&
+                        !juegoApi.getLimiteSuperiorInicial().equals(juegoApi.getLimiteSuperiorInicial())) {
+                    recalcularPorcentajes();
+                }
                 escenaJuego = crearEscenaJuego();
                 ventanaPrincipal.setScene(escenaJuego);
             } catch (Exception ex) {
@@ -247,17 +254,20 @@ public class BetweenleGUI extends Application {
             if (newText.length() > longitud) return null;
             return change;
         }));
-        txtEntrada.textProperty().addListener((obs, oldV, newV) -> actualizarTecladoYDinamica());
-
+        txtEntrada.textProperty().addListener((obs, oldV, newV) -> {
+            ultimaJugadaFueVictoria = false;
+            actualizarFilaSecretaEnVivo();
+            actualizarTecladoYDinamica();
+        });
         HBox acciones = new HBox(12);
         acciones.setAlignment(Pos.CENTER);
 
-        SoundButton btnGuess = new SoundButton(t("Adivinar", "Guess"));
+        btnGuess = new SoundButton(t("Adivinar", "Guess"));
         btnGuess.establecerSonidoClic(clickSound);
         btnGuess.setStyle(estiloBotonPrincipal());
         btnGuess.setOnAction(e -> procesarIntento());
 
-        ImageButton btnHint = new ImageButton("pista.png");
+        btnHint = new ImageButton("pista.png");
         btnHint.setText(t("Pista", "Hint"));
         btnHint.establecerImagen(hintImg);
         btnHint.establecerTamanoImagen(22, 22);
@@ -270,11 +280,10 @@ public class BetweenleGUI extends Application {
             abrirMenuPistas();
         });
 
-        SoundButton btnGiveUp = new SoundButton(t("Rendirse", "Give up"));
+        btnGiveUp = new SoundButton(t("Rendirse", "Give up"));
         btnGiveUp.establecerSonidoClic(clickSound);
         btnGiveUp.setStyle("-fx-background-color: #ffecec; -fx-text-fill: #c0392b; -fx-font-weight: bold; -fx-font-size: 14px; -fx-padding: 12 18; -fx-background-radius: 14; -fx-border-color: #ffb3b3; -fx-border-width: 2; -fx-border-radius: 14;");
         btnGiveUp.setOnAction(e -> mostrarVentanaFin(t("Te has rendido", "You gave up"), false));
-
         acciones.getChildren().addAll(btnGuess, btnHint, btnGiveUp);
 
         tecladoPane = crearTecladoVisual();
@@ -301,6 +310,7 @@ public class BetweenleGUI extends Application {
 
         actualizarUI();
         reconstruirFilas();
+        actualizarFilaSecretaEnVivo();
         txtEntrada.requestFocus();
 
         return new Scene(root, 760, 900);
@@ -310,6 +320,16 @@ public class BetweenleGUI extends Application {
         Region r = new Region();
         r.setMinHeight(h);
         return r;
+    }
+
+    private void actualizarEstadoBotonesFinJuego() {
+        if (juegoApi == null) return;
+        boolean terminado = juegoApi.juegoTerminado();
+
+        if (btnGuess != null) btnGuess.setDisable(terminado);
+        if (btnHint != null) btnHint.setDisable(terminado);
+        if (btnGiveUp != null) btnGiveUp.setDisable(terminado);
+        if (txtEntrada != null) txtEntrada.setEditable(!terminado);
     }
 
     private void reconstruirFilas() {
@@ -323,11 +343,55 @@ public class BetweenleGUI extends Application {
         filaLimiteArriba.getChildren().add(bloquePorcentaje(porcentajeInf));
         for (char c : inf.toCharArray()) filaLimiteArriba.getChildren().add(bloqueVerde(String.valueOf(c)));
 
-        for (int i = 0; i < longitud; i++) filaSecreta.getChildren().add(bloqueGris("_"));
+        bloquesSecreto.clear();
+        for (int i = 0; i < longitud; i++) {
+            StackPane b = bloqueGris("_");
+            bloquesSecreto.add(b);
+            filaSecreta.getChildren().add(b);
+        }
 
         filaLimiteAbajo.getChildren().add(bloquePorcentaje(porcentajeSup));
         for (char c : sup.toCharArray()) filaLimiteAbajo.getChildren().add(bloqueVerde(String.valueOf(c)));
     }
+
+    private void actualizarFilaSecretaEnVivo() {
+        if (bloquesSecreto.isEmpty() || txtEntrada == null) return;
+
+        String intento = txtEntrada.getText() == null ? "" : txtEntrada.getText().trim().toUpperCase();
+
+        for (int i = 0; i < bloquesSecreto.size(); i++) {
+            StackPane box = bloquesSecreto.get(i);
+
+            if (ultimaJugadaFueVictoria) {
+                String sec = juegoApi.getPalabraSecreta().toUpperCase();
+                String letra = (i < sec.length()) ? String.valueOf(sec.charAt(i)) : "_";
+                aplicarLetraEnBox(box, letra, true);
+                continue;
+            }
+
+            String letra = (i < intento.length()) ? String.valueOf(intento.charAt(i)) : "_";
+            aplicarLetraEnBox(box, letra, false);
+        }
+    }
+
+    private void aplicarLetraEnBox(StackPane box, String letra, boolean verde) {
+        if (box.getChildren().isEmpty()) return;
+        if (!(box.getChildren().get(0) instanceof Label l)) return;
+
+        l.setText(letra);
+
+        if (verde) {
+            box.setStyle("-fx-background-color: #d1fae5; -fx-background-radius: 10; " +
+                    "-fx-border-radius: 10; -fx-border-color: #6ee7b7; -fx-border-width: 2;");
+            l.setStyle("-fx-text-fill: #0b3a2a;");
+        } else {
+            box.setStyle("-fx-background-color: #e5e7eb; -fx-background-radius: 10; " +
+                    "-fx-border-radius: 10; -fx-border-color: #cbd5e1; -fx-border-width: 2;");
+            l.setStyle("-fx-text-fill: #1f2a44;");
+        }
+    }
+
+
 
     private StackPane bloquePorcentaje(String pct) {
         Label l = new Label(pct == null ? "?%" : pct);
@@ -399,10 +463,12 @@ public class BetweenleGUI extends Application {
         String sup = juegoApi.getLimiteSuperior().toLowerCase();
 
         if (input.length() >= longitud) {
+            boolean victoria = ultimaJugadaFueVictoria;
+
             for (Node n : tecladoPane.getChildren()) {
                 if (n instanceof Button btn && btn.getText().length() == 1) {
                     btn.setDisable(true);
-                    btn.setStyle(teclaInactiva());
+                    btn.setStyle(victoria ? teclaActiva() : teclaInactiva());
                 }
             }
             return;
@@ -438,6 +504,7 @@ public class BetweenleGUI extends Application {
         lblAttempts.setText(t("Intentos: ", "Attempts: ") + juegoApi.getIntentosRestantes() + "/" + intentos);
         reconstruirFilas();
         actualizarTecladoYDinamica();
+        actualizarEstadoBotonesFinJuego();
     }
 
     private void procesarIntento() {
@@ -498,11 +565,24 @@ public class BetweenleGUI extends Application {
 
         String resultado = juegoApi.jugarTurno(intento);
 
-        extraerPorcentajesDeTexto(resultado);
+        boolean ganadoAhora = resultado.startsWith("Ganaste") || resultado.startsWith("You won");
+        ultimaJugadaFueVictoria = ganadoAhora;
 
+        actualizarFilaSecretaEnVivo();
+
+        extraerPorcentajesDeTexto(resultado);
         lblMensajes.setText(uiMensaje(resultado));
 
-        txtEntrada.clear();
+        if (!ganadoAhora) {
+            txtEntrada.clear();
+        } else {
+            txtEntrada.setEditable(false);
+        }
+
+        recalcularPorcentajes();
+        actualizarUI();
+        actualizarEstadoBotonesFinJuego();
+        txtEntrada.requestFocus();
 
         recalcularPorcentajes();
 
